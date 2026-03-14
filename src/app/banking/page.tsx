@@ -1,8 +1,10 @@
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppStore } from '@/store/app-store';
 import { motion } from 'motion/react';
-import { Landmark, Plus, ArrowRight } from 'lucide-react';
+import { Landmark, Plus, ArrowRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CreateBankAccountModal } from './create-bank-account-modal';
 
 const fetchBankAccounts = async (entityId: string) => {
   const res = await fetch('/api/accounting/bank-accounts', {
@@ -15,12 +17,25 @@ const fetchBankAccounts = async (entityId: string) => {
 export function BankingPage() {
   const { currentEntity } = useAppStore();
   const entityId = currentEntity?.id || '';
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: bankAccounts, isLoading } = useQuery({
     queryKey: ['bank-accounts', entityId],
     queryFn: () => fetchBankAccounts(entityId),
     enabled: !!entityId
   });
+
+  const filteredBankAccounts = useMemo(() => {
+    if (!bankAccounts) return [];
+    if (!searchQuery) return bankAccounts;
+    const lowerQuery = searchQuery.toLowerCase();
+    return bankAccounts.filter((account: any) => 
+      account.name.toLowerCase().includes(lowerQuery) ||
+      account.bankName.toLowerCase().includes(lowerQuery) ||
+      (account.accountNumber && account.accountNumber.toLowerCase().includes(lowerQuery))
+    );
+  }, [bankAccounts, searchQuery]);
 
   return (
     <motion.div 
@@ -33,27 +48,51 @@ export function BankingPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Banking</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage your bank accounts and reconcile transactions.</p>
         </div>
-        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm">
-          <Plus className="w-4 h-4" />
-          Add Bank Account
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search accounts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Add Bank Account
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <div className="col-span-full h-64 flex items-center justify-center text-zinc-500">Loading accounts...</div>
-        ) : bankAccounts?.length === 0 ? (
+        ) : filteredBankAccounts.length === 0 ? (
           <div className="col-span-full bg-white border border-zinc-200 rounded-xl p-12 text-center shadow-sm">
             <Landmark className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-zinc-900 mb-1">No bank accounts</h3>
-            <p className="text-zinc-500 mb-4">Add your first bank account to start reconciling.</p>
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Bank Account
-            </button>
+            <h3 className="text-lg font-medium text-zinc-900 mb-1">
+              {searchQuery ? 'No bank accounts found matching your search' : 'No bank accounts'}
+            </h3>
+            {!searchQuery && (
+              <>
+                <p className="text-zinc-500 mb-4">Add your first bank account to start reconciling.</p>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Bank Account
+                </button>
+              </>
+            )}
           </div>
         ) : (
-          bankAccounts?.map((account: any) => (
+          filteredBankAccounts.map((account: any) => (
             <div key={account.id} className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
               <div className="p-6 flex-1">
                 <div className="flex items-center justify-between mb-4">
@@ -95,6 +134,12 @@ export function BankingPage() {
           ))
         )}
       </div>
+
+      <CreateBankAccountModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        entityId={entityId} 
+      />
     </motion.div>
   );
 }

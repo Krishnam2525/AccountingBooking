@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { name: 'Chart of Accounts', icon: BookOpen, href: '/accounts' },
   { name: 'Journal Entries', icon: FileText, href: '/journal-entries' },
   { name: 'Banking', icon: Landmark, href: '/banking' },

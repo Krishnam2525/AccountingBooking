@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
+import { useAppStore } from '@/store/app-store';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { MatchTransactionModal } from './match-transaction-modal';
 
 const fetchTransactions = async (bankAccountId: string) => {
   const res = await fetch(`/api/accounting/bank-accounts/${bankAccountId}/transactions`);
@@ -12,6 +15,9 @@ const fetchTransactions = async (bankAccountId: string) => {
 
 export function ReconcilePage() {
   const { accountId } = useParams();
+  const { currentEntity } = useAppStore();
+  const entityId = currentEntity?.id || '';
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['bank-transactions', accountId],
@@ -71,7 +77,10 @@ export function ReconcilePage() {
                     </td>
                     <td className="px-6 py-4">
                       {tx.status === 'UNRECONCILED' ? (
-                        <button className="text-indigo-600 hover:text-indigo-800 font-medium text-xs">
+                        <button 
+                          onClick={() => setSelectedTransaction(tx)}
+                          className="text-indigo-600 hover:text-indigo-800 font-medium text-xs"
+                        >
                           Find Match
                         </button>
                       ) : (
@@ -98,6 +107,16 @@ export function ReconcilePage() {
           </div>
         )}
       </div>
+
+      {selectedTransaction && (
+        <MatchTransactionModal
+          isOpen={!!selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+          transaction={selectedTransaction}
+          entityId={entityId}
+          bankAccountId={accountId!}
+        />
+      )}
     </motion.div>
   );
 }

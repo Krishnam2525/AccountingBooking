@@ -1,8 +1,10 @@
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/store/app-store';
 import { motion } from 'motion/react';
-import { FileText, Plus, CheckCircle } from 'lucide-react';
+import { FileText, Plus, CheckCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { CreateInvoiceModal } from './create-invoice-modal';
 
 const fetchInvoices = async (entityId: string) => {
   const res = await fetch('/api/accounting/invoices', {
@@ -28,12 +30,25 @@ export function SalesPage() {
   const { currentEntity } = useAppStore();
   const entityId = currentEntity?.id || '';
   const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['invoices', entityId],
     queryFn: () => fetchInvoices(entityId),
     enabled: !!entityId
   });
+
+  const filteredInvoices = useMemo(() => {
+    if (!invoices) return [];
+    if (!searchQuery) return invoices;
+    const lowerQuery = searchQuery.toLowerCase();
+    return invoices.filter((invoice: any) => 
+      invoice.invoiceNumber.toLowerCase().includes(lowerQuery) ||
+      invoice.contact.name.toLowerCase().includes(lowerQuery) ||
+      invoice.status.toLowerCase().includes(lowerQuery)
+    );
+  }, [invoices, searchQuery]);
 
   const authoriseMutation = useMutation({
     mutationFn: authoriseInvoice,
@@ -56,13 +71,35 @@ export function SalesPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Sales Invoices</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage your accounts receivable.</p>
         </div>
-        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm"
+        >
           <Plus className="w-4 h-4" />
           New Invoice
         </button>
       </div>
 
+      <CreateInvoiceModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        entityId={entityId} 
+      />
+
       <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-zinc-200 bg-zinc-50/50">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search invoices..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="h-64 flex items-center justify-center text-zinc-500">Loading invoices...</div>
         ) : (
@@ -80,7 +117,7 @@ export function SalesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {invoices?.map((invoice: any) => (
+                {filteredInvoices.map((invoice: any) => (
                   <tr key={invoice.id} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-zinc-900">{invoice.invoiceNumber}</td>
                     <td className="px-6 py-4 text-zinc-700">{invoice.contact.name}</td>
@@ -112,12 +149,12 @@ export function SalesPage() {
                     </td>
                   </tr>
                 ))}
-                {(!invoices || invoices.length === 0) && (
+                {filteredInvoices.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-zinc-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="w-8 h-8 text-zinc-300 mb-3" />
-                        <p>No invoices found.</p>
+                        <p>{searchQuery ? 'No invoices found matching your search.' : 'No invoices found.'}</p>
                       </div>
                     </td>
                   </tr>

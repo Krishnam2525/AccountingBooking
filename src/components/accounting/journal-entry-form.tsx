@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/store/app-store';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
 
 // Simplified schema for the frontend form
 const FormSchema = z.object({
@@ -15,6 +16,7 @@ const FormSchema = z.object({
     description: z.string().optional(),
     debit: z.number().min(0),
     credit: z.number().min(0),
+    contactId: z.string().optional(),
   })).min(2, 'At least two lines are required')
 }).refine(data => {
   const totalDebit = data.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
@@ -52,14 +54,25 @@ export function JournalEntryForm({ onClose }: { onClose: () => void }) {
     enabled: !!entityId
   });
 
+  const { data: contacts } = useQuery({
+    queryKey: ['contacts', entityId],
+    queryFn: async () => {
+      const res = await fetch('/api/accounting/contacts', {
+        headers: { 'x-entity-id': entityId }
+      });
+      return res.json();
+    },
+    enabled: !!entityId
+  });
+
   const { register, control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       description: '',
       lines: [
-        { accountId: '', debit: 0, credit: 0 },
-        { accountId: '', debit: 0, credit: 0 }
+        { accountId: '', debit: 0, credit: 0, contactId: '' },
+        { accountId: '', debit: 0, credit: 0, contactId: '' }
       ]
     }
   });
@@ -107,139 +120,142 @@ export function JournalEntryForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
-          <h2 className="text-lg font-semibold text-zinc-900">New Journal Entry</h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
-            <X className="w-5 h-5" />
-          </button>
+    <Modal isOpen={true} onClose={onClose} title="New Journal Entry" maxWidth="max-w-5xl">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Date</label>
+            <input 
+              type="date" 
+              {...register('date')}
+              className="w-full px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Description</label>
+            <input 
+              type="text" 
+              {...register('description')}
+              placeholder="Entry description..."
+              className="w-full px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Date</label>
-              <input 
-                type="date" 
-                {...register('date')}
-                className="w-full px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Description</label>
-              <input 
-                type="text" 
-                {...register('description')}
-                placeholder="Entry description..."
-                className="w-full px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
-            </div>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-zinc-700">Lines</label>
+            <button 
+              type="button"
+              onClick={() => append({ accountId: '', debit: 0, credit: 0, contactId: '' })}
+              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" /> Add Line
+            </button>
           </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-zinc-700">Lines</label>
-              <button 
-                type="button"
-                onClick={() => append({ accountId: '', debit: 0, credit: 0 })}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" /> Add Line
-              </button>
-            </div>
-            
-            <div className="border border-zinc-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-2 w-1/3">Account</th>
-                    <th className="px-4 py-2 w-1/3">Description</th>
-                    <th className="px-4 py-2 w-1/6 text-right">Debit</th>
-                    <th className="px-4 py-2 w-1/6 text-right">Credit</th>
-                    <th className="px-4 py-2 w-10"></th>
+          
+          <div className="border border-zinc-200 rounded-lg overflow-hidden">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500">
+                <tr>
+                  <th className="px-4 py-2 w-1/4">Account</th>
+                  <th className="px-4 py-2 w-1/4">Description</th>
+                  <th className="px-4 py-2 w-1/6">Contact (Opt)</th>
+                  <th className="px-4 py-2 w-32 text-right">Debit</th>
+                  <th className="px-4 py-2 w-32 text-right">Credit</th>
+                  <th className="px-4 py-2 w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {fields.map((field, index) => (
+                  <tr key={field.id}>
+                    <td className="px-4 py-2">
+                      <select 
+                        {...register(`lines.${index}.accountId`)}
+                        className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select account...</option>
+                        {accounts?.map((acc: any) => (
+                          <option key={acc.id} value={acc.id} disabled={acc.isControl}>
+                            {acc.code} - {acc.name} {acc.isControl ? '(Control)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.lines?.[index]?.accountId && <p className="text-red-500 text-xs mt-1">{errors.lines[index]?.accountId?.message}</p>}
+                    </td>
+                    <td className="px-4 py-2">
+                      <input 
+                        type="text" 
+                        {...register(`lines.${index}.description`)}
+                        placeholder="Line description..."
+                        className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <select 
+                        {...register(`lines.${index}.contactId`)}
+                        className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">None</option>
+                        {contacts?.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-2">
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        {...register(`lines.${index}.debit`, { valueAsNumber: true })}
+                        className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        {...register(`lines.${index}.credit`, { valueAsNumber: true })}
+                        className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <button 
+                        type="button"
+                        onClick={() => remove(index)}
+                        className="text-zinc-400 hover:text-red-500"
+                        disabled={fields.length <= 2}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {fields.map((field, index) => (
-                    <tr key={field.id}>
-                      <td className="px-4 py-2">
-                        <select 
-                          {...register(`lines.${index}.accountId`)}
-                          className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option value="">Select account...</option>
-                          {accounts?.map((acc: any) => (
-                            <option key={acc.id} value={acc.id} disabled={acc.isControl}>
-                              {acc.code} - {acc.name} {acc.isControl ? '(Control)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.lines?.[index]?.accountId && <p className="text-red-500 text-xs mt-1">{errors.lines[index]?.accountId?.message}</p>}
-                      </td>
-                      <td className="px-4 py-2">
-                        <input 
-                          type="text" 
-                          {...register(`lines.${index}.description`)}
-                          placeholder="Line description..."
-                          className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input 
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          {...register(`lines.${index}.debit`, { valueAsNumber: true })}
-                          className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-right"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input 
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          {...register(`lines.${index}.credit`, { valueAsNumber: true })}
-                          className="w-full px-2 py-1.5 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-right"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <button 
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="text-zinc-400 hover:text-red-500"
-                          disabled={fields.length <= 2}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-zinc-50 border-t border-zinc-200 font-medium">
-                  <tr>
-                    <td colSpan={2} className="px-4 py-3 text-right text-zinc-600">Total</td>
-                    <td className="px-4 py-3 text-right text-zinc-900">${totalDebit.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-zinc-900">${totalCredit.toFixed(2)}</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            {errors.lines?.root && (
-              <p className="text-red-500 text-sm mt-2 font-medium">{errors.lines.root.message}</p>
-            )}
-            {mutation.isError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                {mutation.error.message}
-              </div>
-            )}
+                ))}
+              </tbody>
+              <tfoot className="bg-zinc-50 border-t border-zinc-200 font-medium">
+                <tr>
+                  <td colSpan={3} className="px-4 py-3 text-right text-zinc-600">Total</td>
+                  <td className="px-4 py-3 text-right text-zinc-900">${totalDebit.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-zinc-900">${totalCredit.toFixed(2)}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </form>
+          {errors.lines?.root && (
+            <p className="text-red-500 text-sm mt-2 font-medium">{errors.lines.root.message}</p>
+          )}
+          {mutation.isError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              {mutation.error.message}
+            </div>
+          )}
+        </div>
 
-        <div className="px-6 py-4 border-t border-zinc-200 bg-zinc-50 flex justify-end gap-3 rounded-b-xl">
+        <div className="pt-4 flex justify-end gap-3 border-t border-zinc-100">
           <button 
             type="button" 
             onClick={onClose}
@@ -248,14 +264,14 @@ export function JournalEntryForm({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button 
-            onClick={handleSubmit(onSubmit)}
+            type="submit"
             disabled={mutation.isPending || !isBalanced || totalDebit === 0}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {mutation.isPending ? 'Posting...' : 'Post Entry'}
           </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

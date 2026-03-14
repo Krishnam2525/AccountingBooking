@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Providers } from './components/providers';
 import { DashboardLayout } from './components/layout/dashboard-layout';
+import { DashboardPage } from './app/dashboard/page';
 import { ChartOfAccountsPage } from './app/accounts/page';
 import { JournalEntriesPage } from './app/journal-entries/page';
 import { ReportsPage } from './app/reports/page';
@@ -51,7 +52,8 @@ export default function App() {
         <BrowserRouter>
           <DashboardLayout>
             <Routes>
-              <Route path="/" element={<Navigate to="/accounts" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/accounts" element={<ChartOfAccountsPage />} />
               <Route path="/journal-entries" element={<JournalEntriesPage />} />
               <Route path="/reports" element={<ReportsPage />} />
