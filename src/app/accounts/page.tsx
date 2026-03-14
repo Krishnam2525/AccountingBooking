@@ -96,7 +96,7 @@ export function ChartOfAccountsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {accounts?.map((account: any) => (
+                {Array.isArray(accounts) && accounts.map((account: any) => (
                   <tr key={account.id} className="hover:bg-zinc-50/50 transition-colors group cursor-pointer">
                     <td className="px-6 py-4 font-mono text-zinc-600">{account.code}</td>
                     <td className="px-6 py-4 font-medium text-zinc-900">{account.name}</td>
@@ -119,7 +119,7 @@ export function ChartOfAccountsPage() {
                     </td>
                   </tr>
                 ))}
-                {(!accounts || accounts.length === 0) && (
+                {(!Array.isArray(accounts) || accounts.length === 0) && (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
                       No accounts found. Run the seeder to populate the default chart.

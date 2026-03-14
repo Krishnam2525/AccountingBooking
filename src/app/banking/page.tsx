@@ -27,7 +27,7 @@ export function BankingPage() {
   });
 
   const filteredBankAccounts = useMemo(() => {
-    if (!bankAccounts) return [];
+    if (!Array.isArray(bankAccounts)) return [];
     if (!searchQuery) return bankAccounts;
     const lowerQuery = searchQuery.toLowerCase();
     return bankAccounts.filter((account: any) => 

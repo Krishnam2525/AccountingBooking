@@ -40,7 +40,7 @@ export function PurchasesPage() {
   });
 
   const filteredBills = useMemo(() => {
-    if (!bills) return [];
+    if (!Array.isArray(bills)) return [];
     if (!searchQuery) return bills;
     const lowerQuery = searchQuery.toLowerCase();
     return bills.filter((bill: any) => 

@@ -22,6 +22,7 @@ export function DashboardPage() {
       const res = await fetch('/api/accounting/accounts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch accounts');
       return res.json();
     },
     enabled: !!entityId
@@ -33,6 +34,7 @@ export function DashboardPage() {
       const res = await fetch('/api/accounting/invoices', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch invoices');
       return res.json();
     },
     enabled: !!entityId
@@ -44,6 +46,7 @@ export function DashboardPage() {
       const res = await fetch('/api/accounting/bills', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch bills');
       return res.json();
     },
     enabled: !!entityId
@@ -55,15 +58,16 @@ export function DashboardPage() {
       const res = await fetch('/api/accounting/bank-accounts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch bank accounts');
       return res.json();
     },
     enabled: !!entityId
   });
 
   // Calculate some basic metrics
-  const totalReceivables = invoices?.filter((i: any) => i.status === 'AUTHORISED').reduce((sum: number, i: any) => sum + i.totalAmount, 0) || 0;
-  const totalPayables = bills?.filter((b: any) => b.status === 'AUTHORISED').reduce((sum: number, b: any) => sum + b.totalAmount, 0) || 0;
-  const totalCash = bankAccounts?.reduce((sum: number, b: any) => sum + b.account.balance, 0) || 0;
+  const totalReceivables = Array.isArray(invoices) ? invoices.filter((i: any) => i.status === 'AUTHORISED').reduce((sum: number, i: any) => sum + i.totalAmount, 0) : 0;
+  const totalPayables = Array.isArray(bills) ? bills.filter((b: any) => b.status === 'AUTHORISED').reduce((sum: number, b: any) => sum + b.totalAmount, 0) : 0;
+  const totalCash = Array.isArray(bankAccounts) ? bankAccounts.reduce((sum: number, b: any) => sum + b.account.balance, 0) : 0;
 
   const statCards = [
     {
@@ -138,7 +142,7 @@ export function DashboardPage() {
             <h3 className="font-medium text-zinc-900">Recent Invoices</h3>
           </div>
           <div className="divide-y divide-zinc-100">
-            {invoices?.slice(0, 5).map((invoice: any) => (
+            {Array.isArray(invoices) && invoices.slice(0, 5).map((invoice: any) => (
               <div key={invoice.id} className="px-6 py-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
                 <div>
                   <p className="font-medium text-zinc-900">{invoice.contact.name}</p>
@@ -156,7 +160,7 @@ export function DashboardPage() {
                 </div>
               </div>
             ))}
-            {(!invoices || invoices.length === 0) && (
+            {(!Array.isArray(invoices) || invoices.length === 0) && (
               <div className="px-6 py-8 text-center text-zinc-500 text-sm">
                 No recent invoices
               </div>

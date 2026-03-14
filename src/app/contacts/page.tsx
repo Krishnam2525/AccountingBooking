@@ -26,7 +26,7 @@ export function ContactsPage() {
   });
 
   const filteredContacts = useMemo(() => {
-    if (!contacts) return [];
+    if (!Array.isArray(contacts)) return [];
     if (!searchQuery) return contacts;
     const lowerQuery = searchQuery.toLowerCase();
     return contacts.filter((c: any) => 

@@ -38,6 +38,7 @@ export function CreateInvoiceModal({ isOpen, onClose, entityId }: CreateInvoiceM
       const res = await fetch('/api/accounting/contacts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
     enabled: isOpen && !!entityId
@@ -49,13 +50,14 @@ export function CreateInvoiceModal({ isOpen, onClose, entityId }: CreateInvoiceM
       const res = await fetch('/api/accounting/accounts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch accounts');
       return res.json();
     },
     enabled: isOpen && !!entityId
   });
 
-  const customers = contacts?.filter((c: any) => c.type === 'CUSTOMER' || c.type === 'BOTH') || [];
-  const revenueAccounts = accounts?.filter((a: any) => a.type === 'REVENUE') || [];
+  const customers = Array.isArray(contacts) ? contacts.filter((c: any) => c.type === 'CUSTOMER' || c.type === 'BOTH') : [];
+  const revenueAccounts = Array.isArray(accounts) ? accounts.filter((a: any) => a.type === 'REVENUE') : [];
 
   const { register, control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),

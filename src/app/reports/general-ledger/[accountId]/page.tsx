@@ -74,7 +74,7 @@ export function GeneralLedgerPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {gl?.lines?.map((row: any) => (
+                {Array.isArray(gl?.lines) && gl.lines.map((row: any) => (
                   <tr key={row.id} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-zinc-900 whitespace-nowrap">
                       {format(new Date(row.date), 'MMM d, yyyy')}
@@ -96,7 +96,7 @@ export function GeneralLedgerPage() {
                     </td>
                   </tr>
                 ))}
-                {(!gl?.lines || gl.lines.length === 0) && (
+                {(!Array.isArray(gl?.lines) || gl.lines.length === 0) && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
                       <div className="flex flex-col items-center justify-center">

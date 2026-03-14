@@ -58,7 +58,7 @@ export function ReconcilePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {transactions?.map((tx: any) => (
+                {Array.isArray(transactions) && transactions.map((tx: any) => (
                   <tr key={tx.id} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4 text-zinc-600">{format(new Date(tx.date), 'MMM d, yyyy')}</td>
                     <td className="px-6 py-4 font-medium text-zinc-900">{tx.description}</td>
@@ -92,7 +92,7 @@ export function ReconcilePage() {
                     </td>
                   </tr>
                 ))}
-                {(!transactions || transactions.length === 0) && (
+                {(!Array.isArray(transactions) || transactions.length === 0) && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
                       <p>No transactions to reconcile. Import a bank statement to get started.</p>

@@ -40,7 +40,7 @@ export function SalesPage() {
   });
 
   const filteredInvoices = useMemo(() => {
-    if (!invoices) return [];
+    if (!Array.isArray(invoices)) return [];
     if (!searchQuery) return invoices;
     const lowerQuery = searchQuery.toLowerCase();
     return invoices.filter((invoice: any) => 

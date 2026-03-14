@@ -28,7 +28,7 @@ export function JournalEntriesPage() {
   });
 
   const filteredEntries = useMemo(() => {
-    if (!entries) return [];
+    if (!Array.isArray(entries)) return [];
     if (!searchQuery) return entries;
     const lowerQuery = searchQuery.toLowerCase();
     return entries.filter((entry: any) => 

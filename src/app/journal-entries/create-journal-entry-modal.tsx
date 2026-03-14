@@ -38,6 +38,7 @@ export function CreateJournalEntryModal({ isOpen, onClose, entityId }: CreateJou
       const res = await fetch('/api/accounting/accounts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch accounts');
       return res.json();
     },
     enabled: isOpen && !!entityId
@@ -49,6 +50,7 @@ export function CreateJournalEntryModal({ isOpen, onClose, entityId }: CreateJou
       const res = await fetch('/api/accounting/contacts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
     enabled: isOpen && !!entityId
@@ -163,7 +165,7 @@ export function CreateJournalEntryModal({ isOpen, onClose, entityId }: CreateJou
                       className="w-full px-2 py-1.5 border border-zinc-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">Select account...</option>
-                      {accounts?.map((acc: any) => (
+                      {Array.isArray(accounts) && accounts.map((acc: any) => (
                         <option key={acc.id} value={acc.id}>
                           {acc.code} - {acc.name}
                         </option>
@@ -186,7 +188,7 @@ export function CreateJournalEntryModal({ isOpen, onClose, entityId }: CreateJou
                       className="w-full px-2 py-1.5 border border-zinc-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">None</option>
-                      {contacts?.map((c: any) => (
+                      {Array.isArray(contacts) && contacts.map((c: any) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>

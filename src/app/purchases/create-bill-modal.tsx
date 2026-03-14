@@ -39,6 +39,7 @@ export function CreateBillModal({ isOpen, onClose, entityId }: CreateBillModalPr
       const res = await fetch('/api/accounting/contacts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
     enabled: isOpen && !!entityId
@@ -50,13 +51,14 @@ export function CreateBillModal({ isOpen, onClose, entityId }: CreateBillModalPr
       const res = await fetch('/api/accounting/accounts', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch accounts');
       return res.json();
     },
     enabled: isOpen && !!entityId
   });
 
-  const vendors = contacts?.filter((c: any) => c.type === 'VENDOR' || c.type === 'BOTH') || [];
-  const expenseAccounts = accounts?.filter((a: any) => a.type === 'EXPENSE' || a.type === 'ASSET') || [];
+  const vendors = Array.isArray(contacts) ? contacts.filter((c: any) => c.type === 'VENDOR' || c.type === 'BOTH') : [];
+  const expenseAccounts = Array.isArray(accounts) ? accounts.filter((a: any) => a.type === 'EXPENSE' || a.type === 'ASSET') : [];
 
   const { register, control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<BillFormData>({
     resolver: zodResolver(billSchema),

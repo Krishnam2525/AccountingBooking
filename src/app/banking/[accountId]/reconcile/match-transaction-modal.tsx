@@ -23,6 +23,7 @@ export function MatchTransactionModal({ isOpen, onClose, transaction, entityId, 
       const res = await fetch('/api/accounting/journal-entries', {
         headers: { 'x-entity-id': entityId }
       });
+      if (!res.ok) throw new Error('Failed to fetch journal entries');
       return res.json();
     },
     enabled: isOpen && !!entityId
@@ -54,7 +55,7 @@ export function MatchTransactionModal({ isOpen, onClose, transaction, entityId, 
   });
 
   // Flatten journal entries into lines for matching
-  const matchableLines = journalEntries?.flatMap((entry: any) => 
+  const matchableLines = Array.isArray(journalEntries) ? journalEntries.flatMap((entry: any) => 
     entry.lines.map((line: any) => ({
       ...line,
       entryDate: entry.date,
@@ -62,7 +63,7 @@ export function MatchTransactionModal({ isOpen, onClose, transaction, entityId, 
       entryStatus: entry.status,
       sourceType: entry.sourceType
     }))
-  ).filter((line: any) => line.entryStatus === 'POSTED') || [];
+  ).filter((line: any) => line.entryStatus === 'POSTED') : [];
 
   const filteredLines = matchableLines.filter((line: any) => {
     const amount = Number(line.debit) > 0 ? Number(line.debit) : -Number(line.credit);

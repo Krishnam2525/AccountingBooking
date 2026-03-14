@@ -62,7 +62,7 @@ export function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {tb?.lines?.map((row: any) => (
+                {Array.isArray(tb?.lines) && tb.lines.map((row: any) => (
                   <tr key={row.accountId} className="hover:bg-zinc-50/50 transition-colors group">
                     <td className="px-6 py-4 font-mono text-zinc-900">{row.code}</td>
                     <td className="px-6 py-4 font-medium text-zinc-900">{row.name}</td>
@@ -88,7 +88,7 @@ export function ReportsPage() {
                     </td>
                   </tr>
                 ))}
-                {(!tb?.lines || tb.lines.length === 0) && (
+                {(!Array.isArray(tb?.lines) || tb.lines.length === 0) && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
                       <div className="flex flex-col items-center justify-center">
