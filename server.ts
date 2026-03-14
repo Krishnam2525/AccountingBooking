@@ -7,6 +7,16 @@ import { fileURLToPath } from 'url';
 import { GET as getAccounts, POST as createAccount } from './src/app/api/accounting/accounts/route';
 import { POST as seedAccounts } from './src/app/api/accounting/accounts/seed/route';
 import { GET as getJournalEntries, POST as createJournalEntry } from './src/app/api/accounting/journal-entries/route';
+import { GET as getTrialBalance } from './src/app/api/accounting/reports/trial-balance/route';
+import { GET as getGeneralLedger } from './src/app/api/accounting/reports/general-ledger/route';
+import { GET as getContacts, POST as createContact } from './src/app/api/accounting/contacts/route';
+import { GET as getInvoices, POST as createInvoice } from './src/app/api/accounting/invoices/route';
+import { POST as authoriseInvoice } from './src/app/api/accounting/invoices/[id]/authorise/route';
+import { GET as getBills, POST as createBill } from './src/app/api/accounting/bills/route';
+import { POST as authoriseBill } from './src/app/api/accounting/bills/[id]/authorise/route';
+import { GET as getBankAccounts, POST as createBankAccount } from './src/app/api/accounting/bank-accounts/route';
+import { GET as getBankTransactions, POST as addBankTransactions } from './src/app/api/accounting/bank-accounts/[id]/transactions/route';
+import { POST as reconcileTransaction } from './src/app/api/accounting/bank-accounts/[id]/transactions/[transactionId]/reconcile/route';
 import { POST as setupApp } from './src/app/api/setup/route';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +64,21 @@ async function startServer() {
   app.post('/api/accounting/accounts/seed', adaptRoute(seedAccounts));
   app.get('/api/accounting/journal-entries', adaptRoute(getJournalEntries));
   app.post('/api/accounting/journal-entries', adaptRoute(createJournalEntry));
+  app.get('/api/accounting/reports/trial-balance', adaptRoute(getTrialBalance));
+  app.get('/api/accounting/reports/general-ledger', adaptRoute(getGeneralLedger));
+  app.get('/api/accounting/contacts', adaptRoute(getContacts));
+  app.post('/api/accounting/contacts', adaptRoute(createContact));
+  app.get('/api/accounting/invoices', adaptRoute(getInvoices));
+  app.post('/api/accounting/invoices', adaptRoute(createInvoice));
+  app.post('/api/accounting/invoices/:id/authorise', adaptRoute(authoriseInvoice));
+  app.get('/api/accounting/bills', adaptRoute(getBills));
+  app.post('/api/accounting/bills', adaptRoute(createBill));
+  app.post('/api/accounting/bills/:id/authorise', adaptRoute(authoriseBill));
+  app.get('/api/accounting/bank-accounts', adaptRoute(getBankAccounts));
+  app.post('/api/accounting/bank-accounts', adaptRoute(createBankAccount));
+  app.get('/api/accounting/bank-accounts/:id/transactions', adaptRoute(getBankTransactions));
+  app.post('/api/accounting/bank-accounts/:id/transactions', adaptRoute(addBankTransactions));
+  app.post('/api/accounting/bank-accounts/:id/transactions/:transactionId/reconcile', adaptRoute(reconcileTransaction));
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {

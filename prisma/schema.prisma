@@ -25,6 +25,10 @@ model Entity {
   organization   Organization @relation(fields: [organizationId], references: [id])
   accounts       Account[]
   journalEntries JournalEntry[]
+  contacts       Contact[]
+  invoices       Invoice[]
+  bills          Bill[]
+  bankAccounts   BankAccount[]
 }
 
 // --- ACCOUNTING ENGINE ---
@@ -47,6 +51,9 @@ model Account {
   isActive    Boolean     @default(true)
   entity      Entity      @relation(fields: [entityId], references: [id])
   lines       JournalLine[]
+  invoiceLines InvoiceLine[]
+  billLines    BillLine[]
+  bankAccount  BankAccount?
 
   @@unique([entityId, code])
 }
@@ -81,4 +88,123 @@ model JournalLine {
   contactId      String?      // Link to Customer/Vendor for AR/AP subledgers
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account        Account      @relation(fields: [accountId], references: [id])
+  contact        Contact?     @relation(fields: [contactId], references: [id])
+  bankTransaction BankTransaction?
+}
+
+// --- SUBLEDGERS & CONTACTS ---
+
+enum ContactType {
+  CUSTOMER
+  VENDOR
+  BOTH
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  entityId    String
+  name        String
+  type        ContactType
+  email       String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  entity      Entity   @relation(fields: [entityId], references: [id])
+  invoices    Invoice[]
+  bills       Bill[]
+  journalLines JournalLine[]
+}
+
+enum DocumentStatus {
+  DRAFT
+  AUTHORISED
+  PAID
+  VOIDED
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  entityId      String
+  contactId     String
+  date          DateTime
+  dueDate       DateTime
+  invoiceNumber String
+  status        DocumentStatus @default(DRAFT)
+  totalAmount   Decimal  @default(0)
+  createdAt     DateTime @default(now())
+  entity        Entity   @relation(fields: [entityId], references: [id])
+  contact       Contact  @relation(fields: [contactId], references: [id])
+  lines         InvoiceLine[]
+}
+
+model InvoiceLine {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  accountId   String
+  description String?
+  quantity    Decimal  @default(1)
+  unitPrice   Decimal  @default(0)
+  amount      Decimal  @default(0)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  account     Account  @relation(fields: [accountId], references: [id])
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+  entityId    String
+  contactId   String
+  date        DateTime
+  dueDate     DateTime
+  billNumber  String
+  status      DocumentStatus @default(DRAFT)
+  totalAmount Decimal  @default(0)
+  createdAt   DateTime @default(now())
+  entity      Entity   @relation(fields: [entityId], references: [id])
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  lines       BillLine[]
+}
+
+model BillLine {
+  id          String   @id @default(cuid())
+  billId      String
+  accountId   String
+  description String?
+  quantity    Decimal  @default(1)
+  unitPrice   Decimal  @default(0)
+  amount      Decimal  @default(0)
+  bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  account     Account  @relation(fields: [accountId], references: [id])
+}
+
+// --- BANKING & RECONCILIATION ---
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  entityId      String
+  accountId     String   @unique // The GL account this bank account maps to
+  name          String
+  accountNumber String?
+  bankName      String?
+  currency      String   @default("USD")
+  createdAt     DateTime @default(now())
+  entity        Entity   @relation(fields: [entityId], references: [id])
+  account       Account  @relation(fields: [accountId], references: [id])
+  transactions  BankTransaction[]
+}
+
+enum BankTransactionStatus {
+  UNRECONCILED
+  RECONCILED
+}
+
+model BankTransaction {
+  id              String   @id @default(cuid())
+  bankAccountId   String
+  date            DateTime
+  description     String
+  amount          Decimal  // Positive = money in, Negative = money out
+  status          BankTransactionStatus @default(UNRECONCILED)
+  matchedLineId   String?  @unique // The journal line this is reconciled against
+  createdAt       DateTime @default(now())
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  matchedLine     JournalLine? @relation(fields: [matchedLineId], references: [id])
 }

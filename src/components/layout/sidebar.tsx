@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { name: 'Banking', icon: Landmark, href: '/banking' },
   { name: 'Sales', icon: Users, href: '/sales' },
   { name: 'Purchases', icon: Building2, href: '/purchases' },
+  { name: 'Contacts', icon: Users, href: '/contacts' },
   { name: 'Inventory', icon: Package, href: '/inventory' },
   { name: 'Reports', icon: FileText, href: '/reports' },
   { name: 'Settings', icon: Settings, href: '/settings' },

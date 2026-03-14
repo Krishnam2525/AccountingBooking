@@ -19,7 +19,7 @@ export class ReportingService {
     const lines = await prisma.journalLine.findMany({
       where: {
         account: { entityId },
-        entry: { status: 'POSTED' }
+        journalEntry: { status: 'POSTED' }
       },
       include: { account: true }
     });
@@ -81,10 +81,10 @@ export class ReportingService {
     const lines = await prisma.journalLine.findMany({
       where: {
         accountId,
-        entry: { status: 'POSTED' }
+        journalEntry: { status: 'POSTED' }
       },
-      include: { entry: true },
-      orderBy: { entry: { date: 'asc' } }
+      include: { journalEntry: true },
+      orderBy: { journalEntry: { date: 'asc' } }
     });
 
     const isDebitNormal = ['ASSET', 'EXPENSE'].includes(account.type);
@@ -102,10 +102,10 @@ export class ReportingService {
 
       return {
         id: line.id,
-        date: line.entry.date,
-        entryId: line.entryId,
-        description: line.description || line.entry.description,
-        sourceType: line.entry.sourceType,
+        date: line.journalEntry.date,
+        entryId: line.journalEntryId,
+        description: line.description || line.journalEntry.description,
+        sourceType: line.journalEntry.sourceType,
         debit: debit.toNumber(),
         credit: credit.toNumber(),
         balance: runningBalance.toNumber()
