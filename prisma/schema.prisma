@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// --- MULTI-ENTITY & AUTH ---
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  entities    Entity[]
+}
+
+model Entity {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  baseCurrency   String   // e.g., USD
+  isElimination  Boolean  @default(false) // True for consolidation elimination entities
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  accounts       Account[]
+  journalEntries JournalEntry[]
+}
+
+// --- ACCOUNTING ENGINE ---
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Account {
+  id          String      @id @default(cuid())
+  entityId    String
+  code        String      // e.g., "1000"
+  name        String      // e.g., "Cash"
+  type        AccountType
+  isControl   Boolean     @default(false) // True for AR, AP, Inventory (blocks manual journals)
+  isActive    Boolean     @default(true)
+  entity      Entity      @relation(fields: [entityId], references: [id])
+  lines       JournalLine[]
+
+  @@unique([entityId, code])
+}
+
+enum EntryStatus {
+  DRAFT
+  POSTED
+  VOIDED
+}
+
+model JournalEntry {
+  id          String        @id @default(cuid())
+  entityId    String
+  date        DateTime
+  description String
+  status      EntryStatus   @default(DRAFT)
+  sourceType  String        // e.g., "INVOICE", "BILL", "MANUAL", "STOCK_RECEIPT"
+  sourceId    String?       // ID of the source document
+  createdAt   DateTime      @default(now())
+  createdBy   String
+  entity      Entity        @relation(fields: [entityId], references: [id])
+  lines       JournalLine[]
+}
+
+model JournalLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  description    String?
+  debit          Decimal      @default(0)
+  credit         Decimal      @default(0)
+  contactId      String?      // Link to Customer/Vendor for AR/AP subledgers
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        Account      @relation(fields: [accountId], references: [id])
+}
